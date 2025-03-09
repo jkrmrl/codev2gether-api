@@ -13,19 +13,28 @@
   "license": "ISC",
   "author": "",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "ts-node src/index.ts",   
-    "build": "tsc",                 
-    "start": "node dist/index.js",  
-    "watch": "nodemon -r ts-node/register src/index.ts"  
+    "dev": "ts-node src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "watch": "nodemon -r ts-node/register src/server.ts"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
+    "@types/pg": "^8.11.11",
+    "@types/sequelize": "^4.28.20",
     "express": "^4.21.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.3",
+    "pg-hstore": "^2.3.4",
+    "pg-promise": "^11.10.2",
+    "sequelize": "^6.37.6"
   }
 }
