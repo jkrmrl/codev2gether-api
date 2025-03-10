@@ -22,6 +22,7 @@
     "watch": "nodemon -r ts-node/register src/server.ts"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
     "@types/pg": "^8.11.11",
