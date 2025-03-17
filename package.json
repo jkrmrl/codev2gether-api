@@ -35,6 +35,7 @@
   "dependencies": {
     "@sequelize/core": "^7.0.0-alpha.42",
     "@sequelize/postgres": "^7.0.0-alpha.45",
+    "bcryptjs": "^3.0.2",
     "dotenv": "^16.4.7",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.3",
