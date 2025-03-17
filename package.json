@@ -24,6 +24,7 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.13.9",
     "@types/pg": "^8.11.11",
     "@types/sequelize": "^4.28.20",
@@ -35,6 +36,7 @@
     "@sequelize/core": "^7.0.0-alpha.42",
     "@sequelize/postgres": "^7.0.0-alpha.45",
     "dotenv": "^16.4.7",
+    "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.3",
     "pg-hstore": "^2.3.4",
     "pg-promise": "^11.10.2",
