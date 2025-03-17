@@ -24,3 +24,25 @@ export const registerUser = async (name: string, username: string, password: str
     throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
   }
 };
+
+export const loginUser = async (username: string, password: string) => {
+    try {
+      if (!username || !password) {
+        throw new Error('All input fields must not be empty');
+      }
+
+      const user = await User.findOne({ where: { username } });
+  
+      if (!user) throw new Error('User not found');
+  
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+  
+      if (!isPasswordValid) throw new Error('Invalid password');
+  
+      const token = generateToken(user.id, user.name, user.username);
+  
+      return { token };
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
+    }
+};
