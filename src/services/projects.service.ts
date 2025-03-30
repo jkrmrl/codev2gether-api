@@ -37,3 +37,27 @@ export const createProject = async (
         throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
     }
 };
+
+export const getProjects = async (userId: number) => {
+    try {
+        const projects1 = await Project.findAll({ where: { owner_id: userId } });
+
+        const collaboratorProjects = await Collaborator.findAll({
+            where: { user_id: userId },
+        });
+
+        const projectIds = collaboratorProjects.map((collab) => collab.project_id);
+
+        const projects2 = await Project.findAll({
+            where: {
+                id: projectIds
+            }
+        });
+
+        const projects = [...new Set([...projects1, ...projects2])];
+
+        return projects;
+    } catch (error) {
+        throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
+    }
+};
