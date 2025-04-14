@@ -1,6 +1,7 @@
 import Project from '../models/projects.model';
 import Collaborator from '../models/collaborators.model';
 import Code from '../models/code.model';
+import User from '../models/users.model';
 
 export const createProject = async (
     name: string,
@@ -80,4 +81,57 @@ export const saveCode = async (
     } catch (error) {
       throw error;
     }
+};
+
+let associationsDefined = false;
+
+export const getProject = async (projectId: number, userId: number) => {
+  try {
+    if (!associationsDefined) {
+      Project.hasMany(Code, { foreignKey: 'project_id', as: 'codes' });
+      Project.hasMany(Collaborator, { foreignKey: 'project_id', as: 'collaborators' });
+      Project.belongsTo(User, { foreignKey: 'owner_id', as: 'owner' });
+      Code.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+      Collaborator.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+      associationsDefined = true;
+    }
+
+    const project = await Project.findByPk(projectId, {
+      include: [
+        {
+          model: Code,
+          as: 'codes',
+          include: [{ model: User, as: 'user' }],
+        },
+        {
+          model: Collaborator,
+          as: 'collaborators',
+          include: [{ model: User, as: 'user' }],
+        },
+        {
+          model: User,
+          as: 'owner',
+        },
+      ],
+    });
+
+    if (!project) {
+      return null;
+    }
+
+    if (project.owner_id !== userId) {
+      const collaborator = await Collaborator.findOne({
+        where: { project_id: projectId, user_id: userId },
+      });
+
+      if (!collaborator) {
+        return null; 
+      }
+    }
+
+    return project;
+  } catch (error) {
+    throw error;
+  }
 };
