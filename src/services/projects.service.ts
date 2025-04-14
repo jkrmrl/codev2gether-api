@@ -1,5 +1,6 @@
 import Project from '../models/projects.model';
 import Collaborator from '../models/collaborators.model';
+import Code from '../models/code.model';
 
 export const createProject = async (
     name: string,
@@ -59,5 +60,24 @@ export const getProjects = async (userId: number) => {
         return projects;
     } catch (error) {
         throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
+    }
+};
+
+export const saveCode = async (
+    projectId: number,
+    userId: number,
+    codeValue: string,
+    lastEditedBy: number
+  ) => {
+    try {
+      const newCode = await Code.create({
+        project_id: projectId,
+        user_id: userId,
+        code_value: codeValue,
+        last_edited_by: lastEditedBy
+      });
+      return newCode;
+    } catch (error) {
+      throw error;
     }
 };

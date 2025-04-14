@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { createProject } from '../services/projects.service'; 
-import { getProjects } from '../services/projects.service';
+import { createProject, getProjects, saveCode } from '../services/projects.service'; 
 
 export const createNewProject = async (req: Request, res: Response): Promise<void> => { 
     const { name, description, programming_language, collaborators } = req.body;
@@ -44,5 +43,37 @@ export const getAllProjects = async (req: Request, res: Response): Promise<void>
     } catch (error: any) {
         res.status(400).json({ message: error.message });
         return;
+    }
+};
+
+export const saveProjectCode = async (req: Request, res: Response): Promise<void> => {
+    const { code_value } = req.body;
+  
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const userId = req.user?.id;
+  
+      if (!userId) {
+        res.status(401).json({ message: 'User ID not found in token' });
+        return;
+      }
+  
+      if (!projectId) {
+        res.status(400).json({ message: 'Project ID is required.' });
+        return;
+      }
+  
+      const savedCode = await saveCode(
+        projectId,
+        userId,
+        code_value,
+        userId 
+      );
+  
+      res.status(201).json({ message: 'Code saved successfully', savedCode });
+      return;
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+      return;
     }
 };
