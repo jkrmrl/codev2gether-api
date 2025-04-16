@@ -86,21 +86,9 @@ export const saveCode = async (
 
 };
 
-let associationsDefined = false;
-
 export const getProject = async (projectId: number, userId: number) => {
 
   try {
-    if (!associationsDefined) {
-      Project.hasMany(Code, { foreignKey: 'project_id', as: 'codes' });
-      Project.hasMany(Collaborator, { foreignKey: 'project_id', as: 'collaborators' });
-      Project.belongsTo(User, { foreignKey: 'owner_id', as: 'owner' });
-      Code.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-      Collaborator.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-
-      associationsDefined = true;
-    }
-
     const project = await Project.findByPk(projectId, {
       include: [
         {
@@ -130,7 +118,7 @@ export const getProject = async (projectId: number, userId: number) => {
       });
 
       if (!collaborator) {
-        return null; 
+        return null;
       }
     }
 
@@ -138,7 +126,7 @@ export const getProject = async (projectId: number, userId: number) => {
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
   }
-
+  
 };
 
 export const updateProject = async (

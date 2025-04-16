@@ -3,6 +3,16 @@ import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import userRoutes from './routes/users.route';
 import projectsRoutes from './routes/projects.route';
+import Project from './models/projects.model';
+import User from './models/users.model';
+import Collaborator from './models/collaborators.model';
+import Code from './models/code.model';
+
+const models = { Project, User, Collaborator, Code };
+
+Object.values(models)
+  .filter((model: any) => typeof model.associate === 'function')
+  .forEach((model: any) => model.associate(models));
 
 dotenv.config();
 
