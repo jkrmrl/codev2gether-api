@@ -10,11 +10,8 @@ export const createProject = async (
     owner_id: number,
     collaborators: { user_id: number; access_level: string }[] = [] 
 ) => {
-    try {
-        if (!name || !description || !programming_language) {
-            throw new Error('Enter necessary input fields');
-        }
 
+    try {
         const newProject = await Project.create({
             name,
             description,
@@ -35,12 +32,14 @@ export const createProject = async (
         }
 
         return newProject;
-    } catch (error) {
-        throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
+    } catch (error: any) {
+      throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
     }
+
 };
 
 export const getProjects = async (userId: number) => {
+
     try {
         const projects1 = await Project.findAll({ where: { owner_id: userId } });
 
@@ -62,6 +61,7 @@ export const getProjects = async (userId: number) => {
     } catch (error) {
         throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
     }
+
 };
 
 export const saveCode = async (
@@ -70,6 +70,7 @@ export const saveCode = async (
     codeValue: string,
     lastEditedBy: number
   ) => {
+
     try {
       const newCode = await Code.create({
         project_id: projectId,
@@ -79,13 +80,15 @@ export const saveCode = async (
       });
       return newCode;
     } catch (error) {
-      throw error;
+      throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
     }
+
 };
 
 let associationsDefined = false;
 
 export const getProject = async (projectId: number, userId: number) => {
+
   try {
     if (!associationsDefined) {
       Project.hasMany(Code, { foreignKey: 'project_id', as: 'codes' });
@@ -132,6 +135,7 @@ export const getProject = async (projectId: number, userId: number) => {
 
     return project;
   } catch (error) {
-    throw error;
+    throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
   }
+
 };

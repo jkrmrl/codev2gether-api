@@ -25,11 +25,11 @@ Project.init(
         },
         description: {
             type: DataTypes.TEXT,
-            allowNull: true,
+            allowNull: false,
         },
         programming_language: {
             type: DataTypes.STRING,
-            allowNull: true,
+            allowNull: false,
         },
         owner_id: {
             type: DataTypes.INTEGER,
