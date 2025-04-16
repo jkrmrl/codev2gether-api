@@ -2,6 +2,7 @@ import Project from '../models/projects.model';
 import Collaborator from '../models/collaborators.model';
 import Code from '../models/code.model';
 import User from '../models/users.model';
+import { Op } from 'sequelize';
 
 export const createProject = async (
     name: string,
@@ -138,4 +139,78 @@ export const getProject = async (projectId: number, userId: number) => {
     throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred');
   }
 
+};
+
+export const updateProject = async (
+    projectId: number,
+    userId: number, 
+    name: string,
+    description: string,
+    programming_language: string,
+    collaborators: { id: number; access_level?: string; action: 'add' | 'edit' | 'remove' }[] = []
+  ) => {
+    try {
+        const project = await Project.findByPk(projectId);
+
+        if (!project) {
+            throw new Error('Project not found');
+        }
+
+        if (project.owner_id !== userId) {
+            throw new Error('You are not the owner of this project and cannot edit it');
+        }
+
+        await project.update({
+            name,
+            description,
+            programming_language,
+        });
+
+        if (collaborators && collaborators.length > 0) {
+            await Promise.all(
+                collaborators.map(async (collaboratorData) => {
+                    const { id, access_level, action } = collaboratorData;
+
+                    const existingCollaborator = await Collaborator.findOne({
+                        where: {
+                            project_id: projectId,
+                            user_id: id,
+                        },
+                    });
+
+                    if (action === 'add' && !existingCollaborator) {
+                        await Collaborator.create({
+                            project_id: projectId,
+                            user_id: id,
+                            access_level: access_level || 'viewer',
+                        });
+                    } else if (action === 'edit' && existingCollaborator) {
+                        if (access_level) {
+                            await existingCollaborator.update({ access_level });
+                        }
+                    } else if (action === 'remove' && existingCollaborator) {
+                        await Collaborator.destroy({
+                            where: {
+                                project_id: projectId,
+                                user_id: id,
+                            },
+                        });
+                    }
+                })
+            );
+        }
+
+        const updatedProject = await Project.findByPk(projectId, {
+            include: [{
+                model: Collaborator,
+                as: 'collaborators',
+                attributes: ['user_id', 'access_level'],
+            }],
+        });
+
+        return updatedProject;
+
+    } catch (error) {
+        throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred while updating the project');
+    }
 };
