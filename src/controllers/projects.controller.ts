@@ -56,34 +56,35 @@ export const getAllProjects = async (req: Request, res: Response): Promise<void>
 
 export const saveProjectCode = async (req: Request, res: Response): Promise<void> => {
 
-    const { code_value } = req.body;
-    const projectId = parseInt(req.params.projectId);
-    const userId = req.user?.id;
-  
-    if (!userId) {
-      res.status(401).json({ message: 'User ID not found in token' });
-      return;
-    }
-  
-    if (!projectId) {
-      res.status(400).json({ message: 'Project ID is required.' });
-      return;
-    }
-  
-    try {
-      const savedCode = await saveCode(
-        projectId,
-        userId,
-        code_value,
-        userId 
-      );
-  
-      res.status(201).json({ message: 'Code saved successfully', savedCode });
-      return;
-    } catch (error: any) {
+  const { code_value } = req.body;
+  const projectId = parseInt(req.params.projectId);
+  const userId = req.user?.id;
+
+  if (!userId) {
+    res.status(401).json({ message: 'User ID not found in token' });
+    return;
+  }
+
+  try {
+    const savedCode = await saveCode(
+      projectId,
+      userId,
+      code_value,
+      userId
+    );
+
+    res.status(201).json({ message: 'Code saved successfully', savedCode });
+    return;
+  } catch (error: any) {
+    if (error.message === 'Project not found') {
+      res.status(404).json({ message: error.message });
+    } else if (error.message === 'Only the owner or an editor can save code') {
+      res.status(403).json({ message: error.message });
+    } else {
       res.status(500).json({ message: error.message });
-      return;
     }
+    return;
+  }
 
 };
 

@@ -71,13 +71,32 @@ export const saveCode = async (
     codeValue: string,
     lastEditedBy: number
   ) => {
-
     try {
+      const project = await Project.findByPk(projectId);
+
+      if (!project) {
+        throw new Error('Project not found');
+      }
+
+      const isOwner = project.owner_id === userId;
+
+      const isEditor = await Collaborator.findOne({
+        where: {
+          project_id: projectId,
+          user_id: userId,
+          access_level: 'editor',
+        },
+      });
+
+      if (!isOwner && !isEditor) {
+        throw new Error('Only the owner or an editor can save code');
+      }
+
       const newCode = await Code.create({
         project_id: projectId,
         user_id: userId,
         code_value: codeValue,
-        last_edited_by: lastEditedBy
+        last_edited_by: lastEditedBy,
       });
       return newCode;
     } catch (error) {
