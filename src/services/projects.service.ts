@@ -221,3 +221,40 @@ export const updateProject = async (
         throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred while updating the project');
     }
 };
+
+export const deleteProject = async (projectId: number, userId: number): Promise<boolean> => {
+
+  try {
+    const project = await Project.findByPk(projectId);
+
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
+    if (project.owner_id !== userId) {
+      throw new Error('You are not the owner of this project and cannot delete it');
+    }
+
+    await Project.sequelize?.transaction(async (t) => {
+      await Collaborator.destroy({
+        where: { project_id: projectId },
+        transaction: t,
+      });
+
+      await Code.destroy({
+        where: { project_id: projectId },
+        transaction: t,
+      });
+
+      await Project.destroy({
+        where: { id: projectId },
+        transaction: t,
+      });
+    });
+
+    return true;
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'An unexpected error occurred while deleting the project');
+  }
+
+};

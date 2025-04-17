@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createProject, getProjects, saveCode, getProject, updateProject } from '../services/projects.service'; 
+import { createProject, getProjects, saveCode, getProject, updateProject, deleteProject } from '../services/projects.service'; 
 
 export const createNewProject = async (req: Request, res: Response): Promise<void> => { 
 
@@ -152,4 +152,37 @@ export const updateProjectDetails = async (req: Request, res: Response): Promise
       }
       return;
   }
+};
+
+export const deleteProjectDetails = async (req: Request, res: Response): Promise<void> => {
+
+  const projectId = parseInt(req.params.projectId);
+  const userId = req.user?.id;
+
+  if (!userId) {
+    res.status(401).json({ message: 'User ID not found in token' });
+    return;
+  }
+
+  try {
+    const isDeleted = await deleteProject(projectId, userId);
+
+    if (!isDeleted) {
+      res.status(403).json({ message: 'User is not authorized to delete this project or project not found' });
+      return;
+    }
+
+    res.status(200).json({ message: 'Project deleted successfully' }); 
+    return;
+  } catch (error: any) {
+    if (error.message === 'Project not found') {
+      res.status(404).json({ message: error.message });
+    } else if (error.message === 'You are not the owner of this project and cannot delete it') {
+      res.status(403).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: error.message || 'Failed to delete project' });
+    }
+    return;
+  }
+
 };
