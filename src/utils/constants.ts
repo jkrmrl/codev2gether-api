@@ -18,8 +18,10 @@ export const ERROR_MESSAGES = {
   MISSING_FIELDS: "Please fill out all required fields",
   MISSING_USER_ID: "User ID not found in token",
   USER_NOT_FOUND: "Username not found",
+  PROJECT_NOT_FOUND: "Project not found",
   USER_EXISTS: "User already exists",
   INVALID_CREDENTIALS: "Invalid username or password",
+  FORBIDDEN: "You cannot view, edit, or delete this project",
   INTERNAL_ERROR: "Something went wrong",
 };
 
@@ -29,5 +31,7 @@ export const SUCCESS_MESSAGES = {
   PROJECT_CREATED: "Project created successfully",
   PROJECT_UPDATED: "Project details updated successfully",
   PROJECT_DELETED: "Project deleted successfully",
+  PROJECT_RETRIEVED: "Project retrieved successfully",
+  PROJECTS_RETRIEVED: "Projects retrieved successfully",
   CODE_SAVED: "Code saved successfully",
 };

@@ -1,188 +1,103 @@
-import { Request, Response } from 'express';
-import { createProject, getProjects, saveCode, getProject, updateProject, deleteProject } from '../services/projects.service'; 
+import { Request, Response } from "express";
+import {
+  createProject,
+  getProjects,
+  saveCode,
+  getProject,
+  updateProject,
+  deleteProject,
+} from "../services/projects.service";
+import { HTTP_STATUS, SUCCESS_MESSAGES } from "../utils/constants";
 
-export const createNewProject = async (req: Request, res: Response): Promise<void> => { 
-
-    const { name, description, programming_language, collaborators } = req.body;
-    const owner_id = req.user?.id;
-
-    if (!name || !description || !programming_language) {
-      res.status(400).json({ message: 'All fields must be entered' });
-      return;
-    }
-
-    if (!owner_id) {
-        res.status(401).json({ message: 'User ID not found in token' });
-        return;
-    }
-
-    try {
-        const project = await createProject(
-            name,
-            description,
-            programming_language,
-            owner_id,
-            collaborators
-        );
-
-        res.status(201).json({ message: 'Project created successfully', project }); 
-        return;
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-      return;
-    }
-
-};
-
-export const getAllProjects = async (req: Request, res: Response): Promise<void> => {
-
-    const userId = req.user?.id; 
-
-    if (!userId) {
-        res.status(401).json({ message: 'User ID not found in token' });
-        return;
-    }
-
-    try {
-        const projects = await getProjects(userId);
-        res.status(200).json({ projects });
-        return;
-    } catch (error: any) {
-        res.status(500).json({ message: error.message });
-        return;
-    }
-
-};
-
-export const saveProjectCode = async (req: Request, res: Response): Promise<void> => {
-
-  const { code_value } = req.body;
-  const projectId = parseInt(req.params.projectId);
-  const userId = req.user?.id;
-
-  if (!userId) {
-    res.status(401).json({ message: 'User ID not found in token' });
-    return;
-  }
-
+export const createNewProject = async (req: Request, res: Response) => {
   try {
-    const savedCode = await saveCode(
+    const { name, description, programming_language, collaborators } = req.body;
+    const owner_id = req.user!.id;
+    const project = await createProject(
+      name,
+      description,
+      programming_language,
+      owner_id,
+      collaborators
+    );
+    res
+      .status(HTTP_STATUS.CREATED)
+      .json({ message: SUCCESS_MESSAGES.PROJECT_CREATED, project });
+  } catch (error: any) {
+    res.status(error?.status).json({ message: error?.message });
+  }
+};
+
+export const getAllProjects = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const projects = await getProjects(userId);
+    res
+      .status(HTTP_STATUS.OK)
+      .json({ message: SUCCESS_MESSAGES.PROJECTS_RETRIEVED, projects });
+  } catch (error: any) {
+    res.status(error?.status).json({ message: error?.message });
+  }
+};
+
+export const saveProjectCode = async (req: Request, res: Response) => {
+  try {
+    const { code_value } = req.body;
+    const projectId = parseInt(req.params.projectId);
+    const userId = req.user!.id;
+    const savedCode = await saveCode(projectId, userId, code_value, userId);
+    res
+      .status(HTTP_STATUS.OK)
+      .json({ message: SUCCESS_MESSAGES.CODE_SAVED, savedCode });
+  } catch (error: any) {
+    res.status(error?.status).json({ message: error?.message });
+  }
+};
+
+export const getProjectDetails = async (req: Request, res: Response) => {
+  try {
+    const projectId = parseInt(req.params.projectId);
+    const userId = req.user!.id;
+    const project = await getProject(projectId, userId);
+    res
+      .status(HTTP_STATUS.OK)
+      .json({ message: SUCCESS_MESSAGES.PROJECT_RETRIEVED, project });
+  } catch (error: any) {
+    res.status(error?.status).json({ message: error?.message });
+  }
+};
+
+export const updateProjectDetails = async (req: Request, res: Response) => {
+  try {
+    const { name, description, programming_language, collaborators } = req.body;
+    const projectId = parseInt(req.params.projectId);
+    const userId = req.user!.id;
+    const updatedProject = await updateProject(
       projectId,
       userId,
-      code_value,
-      userId
+      name,
+      description,
+      programming_language,
+      collaborators
     );
-
-    res.status(201).json({ message: 'Code saved successfully', savedCode });
-    return;
+    res.status(HTTP_STATUS.OK).json({
+      message: SUCCESS_MESSAGES.PROJECT_UPDATED,
+      project: updatedProject,
+    });
   } catch (error: any) {
-    if (error.message === 'Project not found') {
-      res.status(404).json({ message: error.message });
-    } else if (error.message === 'Only the owner or an editor can save code') {
-      res.status(403).json({ message: error.message });
-    } else {
-      res.status(500).json({ message: error.message });
-    }
-    return;
+    res.status(error?.status).json({ message: error?.message });
   }
-
 };
 
-export const getProjectDetails = async (req: Request, res: Response): Promise<void> => {
-
+export const deleteProjectDetails = async (req: Request, res: Response) => {
+  try {
     const projectId = parseInt(req.params.projectId);
-    const userId = req.user?.id; 
-
-    if (!userId) {
-      res.status(401).json({ message: 'User ID not found in token' });
-      return;
-    }
-
-    try {
-      const project = await getProject(projectId, userId);
-  
-      if (!project) {
-        res.status(403).json({ message: 'User is not authorized to view this project' }); 
-        return;
-      }
-  
-      res.status(200).json(project);
-      return;
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-      return;
-    }
-
-};
-
-export const updateProjectDetails = async (req: Request, res: Response): Promise<void> => {
-  const projectId = parseInt(req.params.projectId);
-  const userId = req.user?.id;
-  const { name, description, programming_language, collaborators } = req.body;
-
-  if (!name || !description || !programming_language) {
-    res.status(400).json({ message: 'All fields must be entered' });
-    return;
-  }
-
-  if (!userId) {
-    res.status(401).json({ message: 'User ID not found in token' });
-    return;
-  }
-
-  try {
-      const updatedProject = await updateProject(
-          projectId,
-          userId,
-          name,
-          description,
-          programming_language,
-          collaborators
-      );
-
-      res.status(200).json({ message: 'Project details updated successfully', project: updatedProject });
-      return;
+    const userId = req.user!.id;
+    await deleteProject(projectId, userId);
+    res
+      .status(HTTP_STATUS.OK)
+      .json({ message: SUCCESS_MESSAGES.PROJECT_DELETED });
   } catch (error: any) {
-      if (error.message === 'Project not found') {
-        res.status(404).json({ message: error.message });
-      } else if (error.message === 'You are not the owner of this project and cannot edit it') {
-        res.status(403).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: error.message || 'Failed to update project details' });
-      }
-      return;
+    res.status(error?.status).json({ message: error?.message });
   }
-};
-
-export const deleteProjectDetails = async (req: Request, res: Response): Promise<void> => {
-
-  const projectId = parseInt(req.params.projectId);
-  const userId = req.user?.id;
-
-  if (!userId) {
-    res.status(401).json({ message: 'User ID not found in token' });
-    return;
-  }
-
-  try {
-    const isDeleted = await deleteProject(projectId, userId);
-
-    if (!isDeleted) {
-      res.status(403).json({ message: 'User is not authorized to delete this project or project not found' });
-      return;
-    }
-
-    res.status(200).json({ message: 'Project deleted successfully' }); 
-    return;
-  } catch (error: any) {
-    if (error.message === 'Project not found') {
-      res.status(404).json({ message: error.message });
-    } else if (error.message === 'You are not the owner of this project and cannot delete it') {
-      res.status(403).json({ message: error.message });
-    } else {
-      res.status(500).json({ message: error.message || 'Failed to delete project' });
-    }
-    return;
-  }
-
 };
