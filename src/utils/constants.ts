@@ -22,6 +22,11 @@ export const ERROR_MESSAGES = {
   USER_EXISTS: "User already exists",
   INVALID_CREDENTIALS: "Invalid username or password",
   FORBIDDEN: "You cannot view, edit, or delete this project",
+  UNSUPPORTED_LANGUAGE: "Unsupported programming language for execution",
+  JUDGE0_API_KEY_NOT_FOUND:
+    "JUDGE0_API_KEY is not set in environment variables",
+  JUDGE0_API_HOST_NOT_FOUND:
+    "JUDGE0_API_HOST is not set in environment variables",
   INTERNAL_ERROR: "Something went wrong",
 };
 
@@ -34,4 +39,5 @@ export const SUCCESS_MESSAGES = {
   PROJECT_RETRIEVED: "Project retrieved successfully",
   PROJECTS_RETRIEVED: "Projects retrieved successfully",
   CODE_SAVED: "Code saved successfully",
+  CODE_EXECUTED: "Code executed successfully",
 };

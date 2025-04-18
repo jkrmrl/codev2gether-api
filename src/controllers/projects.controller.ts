@@ -6,6 +6,7 @@ import {
   getProject,
   updateProject,
   deleteProject,
+  executeCode,
 } from "../services/projects.service";
 import { HTTP_STATUS, SUCCESS_MESSAGES } from "../utils/constants";
 
@@ -99,5 +100,21 @@ export const deleteProjectDetails = async (req: Request, res: Response) => {
       .json({ message: SUCCESS_MESSAGES.PROJECT_DELETED });
   } catch (error: any) {
     res.status(error?.status).json({ message: error?.message });
+  }
+};
+
+export const executeProjectCode = async (req: Request, res: Response) => {
+  try {
+    const { code_value } = req.body;
+    const projectId = parseInt(req.params.projectId);
+    const userId = req.user!.id;
+    const executionResult = await executeCode(projectId, code_value, userId);
+    res
+      .status(HTTP_STATUS.OK)
+      .json({ message: SUCCESS_MESSAGES.CODE_EXECUTED, executionResult });
+  } catch (error: any) {
+    res
+      .status(error?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json({ message: error?.message || "An unexpected error occurred." });
   }
 };

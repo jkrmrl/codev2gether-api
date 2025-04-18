@@ -3,6 +3,7 @@ import Collaborator from "../models/collaborators.model";
 import Code from "../models/code.model";
 import User from "../models/users.model";
 import { ERROR_MESSAGES, HTTP_STATUS } from "../utils/constants";
+import { executeCodeOnJudge0, getJudge0LanguageId } from "../utils/judge0";
 
 export const createProject = async (
   name: string,
@@ -301,6 +302,62 @@ export const deleteProject = async (projectId: number, userId: number) => {
     })
     .then(() => {
       return;
+    })
+    .catch((error) => {
+      throw error;
+    });
+};
+
+export const executeCode = async (
+  projectId: number,
+  codeValue: string,
+  userId: number
+) => {
+  return Promise.resolve()
+    .then(async () => {
+      if (!codeValue) {
+        throw {
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: ERROR_MESSAGES.MISSING_FIELDS,
+        };
+      }
+      const project = await Project.findByPk(projectId);
+      if (!project) {
+        throw {
+          status: HTTP_STATUS.NOT_FOUND,
+          message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+        };
+      }
+      return project;
+    })
+    .then(async (project) => {
+      const owner = project.owner_id === userId;
+      const editor = await Collaborator.findOne({
+        where: {
+          project_id: projectId,
+          user_id: userId,
+          access_level: "editor",
+        },
+      });
+      if (!owner && !editor) {
+        throw {
+          status: HTTP_STATUS.FORBIDDEN,
+          message: ERROR_MESSAGES.FORBIDDEN,
+        };
+      }
+      return project;
+    })
+    .then(async (project) => {
+      const judge0LanguageId = getJudge0LanguageId(
+        project.programming_language
+      );
+      if (!judge0LanguageId) {
+        throw {
+          status: HTTP_STATUS.BAD_REQUEST,
+          message: ERROR_MESSAGES.UNSUPPORTED_LANGUAGE,
+        };
+      }
+      return executeCodeOnJudge0(judge0LanguageId, codeValue);
     })
     .catch((error) => {
       throw error;
