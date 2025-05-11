@@ -1,5 +1,5 @@
 import fetch, { Response, HeadersInit } from "node-fetch";
-import { ERROR_MESSAGES } from "./constants";
+import { ERROR_MESSAGES } from "../constants/messages.constants";
 
 const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
 const JUDGE0_API_HOST = process.env.JUDGE0_API_HOST;
@@ -10,12 +10,12 @@ export const executeCodeOnJudge0 = async (
 ) => {
   if (!JUDGE0_API_KEY) {
     throw {
-      message: ERROR_MESSAGES.JUDGE0_API_KEY_NOT_FOUND,
+      message: "JUDGE0_API_KEY is not set in environment variables",
     };
   }
   if (!JUDGE0_API_HOST) {
     throw {
-      message: ERROR_MESSAGES.JUDGE0_API_HOST_NOT_FOUND,
+      message: "JUDGE0_API_HOST is not set in environment variables",
     };
   }
   const url = `https://${JUDGE0_API_HOST}/submissions?wait=true`;

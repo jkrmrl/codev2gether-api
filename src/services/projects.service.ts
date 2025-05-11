@@ -2,91 +2,82 @@ import Project from "../models/projects.model";
 import Collaborator from "../models/collaborators.model";
 import Code from "../models/code.model";
 import User from "../models/users.model";
-import { ERROR_MESSAGES, HTTP_STATUS } from "../utils/constants";
+import { HTTP_STATUS } from "../constants/status.constants";
+import { ERROR_MESSAGES } from "../constants/messages.constants";
 import { executeCodeOnJudge0, getJudge0LanguageId } from "../utils/judge0";
 
 export const createProject = async (
   name: string,
   description: string,
   programming_language: string,
-  owner_id: number,
-  collaborators: { user_id: number; access_level: string }[] = []
-) => {
-  return Promise.resolve()
-    .then(async () => {
-      if (!name || !description || !programming_language || !owner_id) {
-        throw {
-          status: HTTP_STATUS.BAD_REQUEST,
-          message: ERROR_MESSAGES.MISSING_FIELDS,
-        };
-      }
-      const newProject = await Project.create({
-        name,
-        description,
-        programming_language,
-        owner_id,
-      });
-      return newProject;
-    })
-    .then(async (newProject) => {
-      if (collaborators && collaborators.length > 0) {
-        await Promise.all(
-          collaborators.map((collaborator) =>
-            Collaborator.create({
-              project_id: newProject.id,
-              user_id: collaborator.user_id,
-              access_level: collaborator.access_level || "viewer",
-            })
-          )
-        );
-      }
-      return Project.findByPk(newProject.id, {
-        include: [
-          {
-            model: Collaborator,
-            as: "collaborators",
-            attributes: ["user_id", "access_level"],
-          },
-        ],
-      });
-    })
-    .then((newProject) => {
-      return newProject;
-    })
-    .catch((error) => {
-      throw error;
+  userId: number,
+  collaborators: { username: string; access_level: string }[] = []
+): Promise<Project | null> => {
+  try {
+    if (!name || !description || !programming_language) {
+      throw {
+        status: HTTP_STATUS.BAD_REQUEST,
+        message: ERROR_MESSAGES.MISSING_FIELDS,
+      };
+    }
+    const newProject = await Project.create({
+      name,
+      description,
+      programming_language,
+      userId,
     });
+    if (collaborators && collaborators.length > 0) {
+      await Promise.all(
+        collaborators.map(async (collaborator) => {
+          const user = await User.findOne({
+            where: { username: collaborator.username },
+          });
+          if (user) {
+            return Collaborator.create({
+              project_id: newProject.id,
+              user_id: user.id,
+              access_level: collaborator.access_level || "viewer",
+            });
+          } else {
+            return null;
+          }
+        })
+      );
+    }
+    const projectWithCollaborators = await Project.findByPk(newProject.id, {
+      include: [
+        {
+          model: Collaborator,
+          as: "collaborators",
+          attributes: ["user_id", "access_level"],
+        },
+      ],
+    });
+    return projectWithCollaborators;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const getProjects = async (userId: number) => {
-  return Promise.resolve()
-    .then(async () => {
-      if (!userId) {
-        throw {
-          status: HTTP_STATUS.UNAUTHORIZED,
-          message: ERROR_MESSAGES.MISSING_USER_ID,
-        };
-      }
-      return await Project.findAll({ where: { owner_id: userId } });
-    })
-    .then(async (projects1) => {
-      const collaboratorProjects = await Collaborator.findAll({
-        where: { user_id: userId },
-      });
-      const projectIds = collaboratorProjects.map(
-        (collab) => collab.project_id
-      );
-      const projects2 = await Project.findAll({
-        where: {
-          id: projectIds,
-        },
-      });
-      const projects = [...new Set([...projects1, ...projects2])];
-      return projects;
-    })
-    .catch((error) => {
-      throw error;
+export const getProjects = async (userId: number): Promise<Project[]> => {
+  try {
+    const ownedProjects = await Project.findAll({
+      where: { owner_id: userId },
     });
+    const collaboratorProjects = await Collaborator.findAll({
+      where: { user_id: userId },
+    });
+    const projectIds = collaboratorProjects.map((collab) => collab.project_id);
+    const sharedProjects = await Project.findAll({
+      where: {
+        id: projectIds,
+      },
+    });
+    const projects = [...new Set([...ownedProjects, ...sharedProjects])];
+    return projects;
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const saveCode = async (
@@ -94,90 +85,85 @@ export const saveCode = async (
   userId: number,
   codeValue: string,
   lastEditedBy: number
-) => {
-  return Promise.resolve()
-    .then(async () => {
-      const project = await Project.findByPk(projectId);
-      if (!project) {
-        throw {
-          status: HTTP_STATUS.NOT_FOUND,
-          message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
-        };
-      }
-      return project;
-    })
-    .then(async (project) => {
-      const owner = project.owner_id === userId;
-      const editor = await Collaborator.findOne({
-        where: {
-          project_id: projectId,
-          user_id: userId,
-          access_level: "editor",
+): Promise<Code> => {
+  try {
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      throw {
+        status: HTTP_STATUS.NOT_FOUND,
+        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+      };
+    }
+    const owner = project.owner_id === userId;
+    const editor = await Collaborator.findOne({
+      where: {
+        project_id: projectId,
+        user_id: userId,
+        access_level: "editor",
+      },
+    });
+    if (!owner && !editor) {
+      throw {
+        status: HTTP_STATUS.FORBIDDEN,
+        message: ERROR_MESSAGES.FORBIDDEN,
+      };
+    }
+    const code = await Code.create({
+      project_id: projectId,
+      user_id: userId,
+      code_value: codeValue,
+      last_edited_by: lastEditedBy,
+    });
+    return code;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const getProject = async (
+  projectId: number,
+  userId: number
+): Promise<Project> => {
+  try {
+    const project = await Project.findByPk(projectId, {
+      include: [
+        {
+          model: Code,
+          as: "codes",
+          include: [{ model: User, as: "user" }],
         },
+        {
+          model: Collaborator,
+          as: "collaborators",
+          include: [{ model: User, as: "user" }],
+        },
+        {
+          model: User,
+          as: "owner",
+        },
+      ],
+    });
+    if (!project) {
+      throw {
+        status: HTTP_STATUS.NOT_FOUND,
+        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+      };
+    }
+    if (project.owner_id !== userId) {
+      const collaborator = await Collaborator.findOne({
+        where: { project_id: projectId, user_id: userId },
       });
-      if (!owner && !editor) {
+      if (!collaborator) {
         throw {
           status: HTTP_STATUS.FORBIDDEN,
           message: ERROR_MESSAGES.FORBIDDEN,
         };
       }
-      return await Code.create({
-        project_id: projectId,
-        user_id: userId,
-        code_value: codeValue,
-        last_edited_by: lastEditedBy,
-      });
-    })
-    .then((code) => code)
-    .catch((error) => {
-      throw error;
-    });
-};
-
-export const getProject = async (projectId: number, userId: number) => {
-  return Project.findByPk(projectId, {
-    include: [
-      {
-        model: Code,
-        as: "codes",
-        include: [{ model: User, as: "user" }],
-      },
-      {
-        model: Collaborator,
-        as: "collaborators",
-        include: [{ model: User, as: "user" }],
-      },
-      {
-        model: User,
-        as: "owner",
-      },
-    ],
-  })
-    .then((project) => {
-      if (!project) {
-        throw {
-          status: HTTP_STATUS.NOT_FOUND,
-          message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
-        };
-      }
-      if (project.owner_id !== userId) {
-        return Collaborator.findOne({
-          where: { project_id: projectId, user_id: userId },
-        }).then((collaborator) => {
-          if (!collaborator) {
-            throw {
-              status: HTTP_STATUS.FORBIDDEN,
-              message: ERROR_MESSAGES.FORBIDDEN,
-            };
-          }
-          return project;
-        });
-      }
-      return project;
-    })
-    .catch((error) => {
-      throw error;
-    });
+    }
+    return project;
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const updateProject = async (
@@ -187,55 +173,52 @@ export const updateProject = async (
   description: string,
   programming_language: string,
   collaborators: {
-    id: number;
+    username: string;
     access_level?: string;
     action: "add" | "edit" | "remove";
   }[] = []
-) => {
-  return Promise.resolve()
-    .then(() => {
-      if (!name || !description || !programming_language) {
-        throw {
-          status: HTTP_STATUS.BAD_REQUEST,
-          message: ERROR_MESSAGES.MISSING_FIELDS,
-        };
-      }
-      return Project.findByPk(projectId);
-    })
-    .then((project) => {
-      if (!project) {
-        throw {
-          status: HTTP_STATUS.NOT_FOUND,
-          message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
-        };
-      }
-      if (project.owner_id !== userId) {
-        throw {
-          status: HTTP_STATUS.FORBIDDEN,
-          message: ERROR_MESSAGES.FORBIDDEN,
-        };
-      }
-      project.update({
-        name,
-        description,
-        programming_language,
-      });
-    })
-    .then(async () => {
-      if (collaborators && collaborators.length > 0) {
-        await Promise.all(
-          collaborators.map(async (collaboratorData) => {
-            const { id, access_level, action } = collaboratorData;
+): Promise<Project | null> => {
+  try {
+    if (!name || !description || !programming_language) {
+      throw {
+        status: HTTP_STATUS.BAD_REQUEST,
+        message: ERROR_MESSAGES.MISSING_FIELDS,
+      };
+    }
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      throw {
+        status: HTTP_STATUS.NOT_FOUND,
+        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+      };
+    }
+    if (project.owner_id !== userId) {
+      throw {
+        status: HTTP_STATUS.FORBIDDEN,
+        message: ERROR_MESSAGES.FORBIDDEN,
+      };
+    }
+    await project.update({
+      name,
+      description,
+      programming_language,
+    });
+    if (collaborators && collaborators.length > 0) {
+      await Promise.all(
+        collaborators.map(async (collaboratorData) => {
+          const { username, access_level, action } = collaboratorData;
+          const user = await User.findOne({ where: { username } });
+          if (user) {
             const existingCollaborator = await Collaborator.findOne({
               where: {
                 project_id: projectId,
-                user_id: id,
+                user_id: user.id,
               },
             });
             if (action === "add" && !existingCollaborator) {
               await Collaborator.create({
                 project_id: projectId,
-                user_id: id,
+                user_id: user.id,
                 access_level: access_level || "viewer",
               });
             } else if (action === "edit" && existingCollaborator) {
@@ -246,66 +229,67 @@ export const updateProject = async (
               await Collaborator.destroy({
                 where: {
                   project_id: projectId,
-                  user_id: id,
+                  user_id: user.id,
                 },
               });
             }
-          })
-        );
-      }
-    })
-    .then(() => {
-      return Project.findByPk(projectId, {
-        include: [
-          {
-            model: Collaborator,
-            as: "collaborators",
-            attributes: ["user_id", "access_level"],
-          },
-        ],
-      });
-    })
-    .catch((error) => {
-      throw error;
+          } else {
+            return null;
+          }
+        })
+      );
+    }
+    const updatedProject = await Project.findByPk(projectId, {
+      include: [
+        {
+          model: Collaborator,
+          as: "collaborators",
+          attributes: ["user_id", "access_level"],
+        },
+      ],
     });
+    return updatedProject;
+  } catch (error) {
+    throw error;
+  }
 };
 
-export const deleteProject = async (projectId: number, userId: number) => {
-  return Project.findByPk(projectId)
-    .then((project) => {
-      if (!project) {
-        throw {
-          status: HTTP_STATUS.NOT_FOUND,
-          message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
-        };
-      }
-      if (project.owner_id !== userId) {
-        throw {
-          status: HTTP_STATUS.FORBIDDEN,
-          message: ERROR_MESSAGES.FORBIDDEN,
-        };
-      }
-      Project.sequelize?.transaction(async (t) => {
-        await Collaborator.destroy({
-          where: { project_id: projectId },
-          transaction: t,
-        });
-        await Code.destroy({
-          where: { project_id: projectId },
-          transaction: t,
-        });
-        await Project.destroy({
-          where: { id: projectId },
-          transaction: t,
-        });
+export const deleteProject = async (
+  projectId: number,
+  userId: number
+): Promise<void> => {
+  try {
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      throw {
+        status: HTTP_STATUS.NOT_FOUND,
+        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+      };
+    }
+    if (project.owner_id !== userId) {
+      throw {
+        status: HTTP_STATUS.FORBIDDEN,
+        message: ERROR_MESSAGES.FORBIDDEN,
+      };
+    }
+    await Project.sequelize?.transaction(async (t) => {
+      await Collaborator.destroy({
+        where: { project_id: projectId },
+        transaction: t,
       });
-    })
-    .then(() => {
-      return;
-    })
-    .catch((error) => {
-      throw error;
+      await Code.destroy({
+        where: { project_id: projectId },
+        transaction: t,
+      });
+      await Project.destroy({
+        where: { id: projectId },
+        transaction: t,
+      });
     });
+    return;
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const executeCode = async (
@@ -313,53 +297,47 @@ export const executeCode = async (
   codeValue: string,
   userId: number
 ) => {
-  return Promise.resolve()
-    .then(async () => {
-      if (!codeValue) {
-        throw {
-          status: HTTP_STATUS.BAD_REQUEST,
-          message: ERROR_MESSAGES.MISSING_FIELDS,
-        };
-      }
-      const project = await Project.findByPk(projectId);
-      if (!project) {
-        throw {
-          status: HTTP_STATUS.NOT_FOUND,
-          message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
-        };
-      }
-      return project;
-    })
-    .then(async (project) => {
-      const owner = project.owner_id === userId;
-      const editor = await Collaborator.findOne({
-        where: {
-          project_id: projectId,
-          user_id: userId,
-          access_level: "editor",
-        },
-      });
-      if (!owner && !editor) {
-        throw {
-          status: HTTP_STATUS.FORBIDDEN,
-          message: ERROR_MESSAGES.FORBIDDEN,
-        };
-      }
-      return project;
-    })
-    .then(async (project) => {
-      const judge0LanguageId = getJudge0LanguageId(
-        project.programming_language
-      );
-      if (!judge0LanguageId) {
-        throw {
-          status: HTTP_STATUS.BAD_REQUEST,
-          message: ERROR_MESSAGES.UNSUPPORTED_LANGUAGE,
-        };
-      }
-      return executeCodeOnJudge0(judge0LanguageId, codeValue);
-    })
-    .catch((error) => {
-      throw error;
+  try {
+    if (!codeValue) {
+      throw {
+        status: HTTP_STATUS.BAD_REQUEST,
+        message: ERROR_MESSAGES.MISSING_FIELDS,
+      };
+    }
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      throw {
+        status: HTTP_STATUS.NOT_FOUND,
+        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+      };
+    }
+    const owner = project.owner_id === userId;
+    const editor = await Collaborator.findOne({
+      where: {
+        project_id: projectId,
+        user_id: userId,
+        access_level: "editor",
+      },
     });
+    if (!owner && !editor) {
+      throw {
+        status: HTTP_STATUS.FORBIDDEN,
+        message: ERROR_MESSAGES.FORBIDDEN,
+      };
+    }
+    const judge0LanguageId = getJudge0LanguageId(project.programming_language);
+    if (!judge0LanguageId) {
+      throw {
+        status: HTTP_STATUS.BAD_REQUEST,
+        message: ERROR_MESSAGES.UNSUPPORTED_LANGUAGE,
+      };
+    }
+    const executionResult = await executeCodeOnJudge0(
+      judge0LanguageId,
+      codeValue
+    );
+    return executionResult;
+  } catch (error) {
+    throw error;
+  }
 };

@@ -1,8 +1,8 @@
-import { Sequelize, DataTypes, Model } from '@sequelize/core';
-import sequelize from '../utils/database';
-import User from './users.model';
-import Collaborator from './collaborators.model';
-import Code from './code.model';
+import { Sequelize, DataTypes, Model } from "@sequelize/core";
+import sequelize from "../config/db.config";
+import User from "./users.model";
+import Collaborator from "./collaborators.model";
+import Code from "./code.model";
 
 class Project extends Model {
   declare id: number;
@@ -16,7 +16,11 @@ class Project extends Model {
   declare codes?: Code[];
   declare owner?: User;
 
-  static associate: (models: { Collaborator: typeof Collaborator; User: typeof User; Code: typeof Code }) => void;
+  static associate: (models: {
+    Collaborator: typeof Collaborator;
+    User: typeof User;
+    Code: typeof Code;
+  }) => void;
 }
 
 Project.init(
@@ -43,7 +47,7 @@ Project.init(
       allowNull: false,
       references: {
         model: User,
-        key: 'id',
+        key: "id",
       },
     },
   },
@@ -51,22 +55,22 @@ Project.init(
     sequelize,
     timestamps: true,
     underscored: true,
-    modelName: 'Project',
+    modelName: "Project",
   }
 );
 
 Project.associate = (models) => {
   Project.hasMany(models.Code, {
-    foreignKey: 'project_id',
-    as: 'codes',
+    foreignKey: "project_id",
+    as: "codes",
   });
   Project.hasMany(models.Collaborator, {
-    foreignKey: 'project_id',
-    as: 'collaborators',
+    foreignKey: "project_id",
+    as: "collaborators",
   });
   Project.belongsTo(models.User, {
-    foreignKey: 'owner_id',
-    as: 'owner',
+    foreignKey: "owner_id",
+    as: "owner",
   });
 };
 

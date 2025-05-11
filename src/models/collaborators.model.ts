@@ -1,7 +1,7 @@
-import { Sequelize, DataTypes, Model } from '@sequelize/core';
-import sequelize from '../utils/database';
-import Project from './projects.model';
-import User from './users.model';
+import { Sequelize, DataTypes, Model } from "@sequelize/core";
+import sequelize from "../config/db.config";
+import Project from "./projects.model";
+import User from "./users.model";
 
 class Collaborator extends Model {
   declare project_id: number;
@@ -12,7 +12,10 @@ class Collaborator extends Model {
   declare project?: Project;
   declare user?: User;
 
-  static associate: (models: { Project: typeof Project; User: typeof User }) => void;
+  static associate: (models: {
+    Project: typeof Project;
+    User: typeof User;
+  }) => void;
 }
 
 Collaborator.init(
@@ -23,7 +26,7 @@ Collaborator.init(
       primaryKey: true,
       references: {
         model: Project,
-        key: 'id',
+        key: "id",
       },
     },
     user_id: {
@@ -32,7 +35,7 @@ Collaborator.init(
       primaryKey: true,
       references: {
         model: User,
-        key: 'id',
+        key: "id",
       },
     },
     access_level: {
@@ -44,18 +47,18 @@ Collaborator.init(
     sequelize,
     timestamps: false,
     underscored: true,
-    modelName: 'Collaborator',
+    modelName: "Collaborator",
   }
 );
 
 Collaborator.associate = (models) => {
   Collaborator.belongsTo(models.Project, {
-    foreignKey: 'project_id',
-    as: 'project',
+    foreignKey: "project_id",
+    as: "project",
   });
   Collaborator.belongsTo(models.User, {
-    foreignKey: 'user_id',
-    as: 'user',
+    foreignKey: "user_id",
+    as: "user",
   });
 };
 
