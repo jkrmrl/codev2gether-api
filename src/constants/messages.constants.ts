@@ -8,9 +8,10 @@ export const ERROR_MESSAGES = {
   UNSUPPORTED_LANGUAGE: "Unsupported programming language for execution",
   INTERNAL_ERROR: "Something went wrong",
   INVALID_ACCESS_TOKEN: "Invalid access token",
-  ACCESS_TOKEN_NOT_FOUND: "No access token provided",
+  ACCESS_TOKEN_NOT_FOUND: "No access token provided!!",
   INVALID_REFRESH_TOKEN: "Invalid refresh token",
   REFRESH_TOKEN_NOT_FOUND: "No refresh token provided",
+  LOGOUT_FAILURE: "Logout failed on the server",
 };
 
 export const SUCCESS_MESSAGES = {
@@ -23,4 +24,5 @@ export const SUCCESS_MESSAGES = {
   PROJECTS_RETRIEVED: "Projects retrieved successfully",
   CODE_SAVED: "Code saved successfully",
   CODE_EXECUTED: "Code executed successfully",
+  LOGOUT_SUCCESS: "You have successfully logged out",
 };

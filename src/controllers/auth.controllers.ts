@@ -108,3 +108,21 @@ export const refreshTokenController = async (
       .json({ message: ERROR_MESSAGES.INVALID_REFRESH_TOKEN });
   }
 };
+
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      sameSite: "strict",
+      path: "/",
+    });
+    res
+      .status(HTTP_STATUS.OK)
+      .json({ message: SUCCESS_MESSAGES.LOGOUT_SUCCESS });
+  } catch (error: any) {
+    console.error("Error during logout:", error);
+    res
+      .status(error?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json({ message: error?.message || ERROR_MESSAGES.LOGOUT_FAILURE });
+  }
+};

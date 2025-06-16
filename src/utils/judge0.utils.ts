@@ -1,5 +1,4 @@
 import fetch, { Response, HeadersInit } from "node-fetch";
-import { ERROR_MESSAGES } from "../constants/messages.constants";
 
 const JUDGE0_API_KEY = process.env.JUDGE0_API_KEY;
 const JUDGE0_API_HOST = process.env.JUDGE0_API_HOST;

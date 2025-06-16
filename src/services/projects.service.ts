@@ -4,7 +4,10 @@ import Code from "../models/code.model";
 import User from "../models/users.model";
 import { HTTP_STATUS } from "../constants/status.constants";
 import { ERROR_MESSAGES } from "../constants/messages.constants";
-import { executeCodeOnJudge0, getJudge0LanguageId } from "../utils/judge0";
+import {
+  executeCodeOnJudge0,
+  getJudge0LanguageId,
+} from "../utils/judge0.utils";
 
 export const createProject = async (
   name: string,
@@ -24,7 +27,7 @@ export const createProject = async (
       name,
       description,
       programming_language,
-      userId,
+      owner_id: userId,
     });
     if (collaborators && collaborators.length > 0) {
       await Promise.all(
