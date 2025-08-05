@@ -2,12 +2,8 @@ import Project from "../models/projects.model";
 import Collaborator from "../models/collaborators.model";
 import Code from "../models/code.model";
 import User from "../models/users.model";
-import { HTTP_STATUS } from "../constants/status.constants";
-import { ERROR_MESSAGES } from "../constants/messages.constants";
-import {
-  executeCodeOnJudge0,
-  getJudge0LanguageId,
-} from "../utils/judge0.utils";
+import * as constants from "../constants";
+import * as utils from "../utils";
 
 export const createProject = async (
   name: string,
@@ -19,8 +15,8 @@ export const createProject = async (
   try {
     if (!name || !description || !programming_language) {
       throw {
-        status: HTTP_STATUS.BAD_REQUEST,
-        message: ERROR_MESSAGES.MISSING_FIELDS,
+        status: constants.HTTP_STATUS.BAD_REQUEST,
+        message: constants.ERROR_MESSAGES.MISSING_FIELDS,
       };
     }
     const newProject = await Project.create({
@@ -93,8 +89,8 @@ export const saveCode = async (
     const project = await Project.findByPk(projectId);
     if (!project) {
       throw {
-        status: HTTP_STATUS.NOT_FOUND,
-        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+        status: constants.HTTP_STATUS.NOT_FOUND,
+        message: constants.ERROR_MESSAGES.PROJECT_NOT_FOUND,
       };
     }
     const owner = project.owner_id === userId;
@@ -107,8 +103,8 @@ export const saveCode = async (
     });
     if (!owner && !editor) {
       throw {
-        status: HTTP_STATUS.FORBIDDEN,
-        message: ERROR_MESSAGES.FORBIDDEN,
+        status: constants.HTTP_STATUS.FORBIDDEN,
+        message: constants.ERROR_MESSAGES.FORBIDDEN,
       };
     }
     const code = await Code.create({
@@ -148,8 +144,8 @@ export const getProject = async (
     });
     if (!project) {
       throw {
-        status: HTTP_STATUS.NOT_FOUND,
-        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+        status: constants.HTTP_STATUS.NOT_FOUND,
+        message: constants.ERROR_MESSAGES.PROJECT_NOT_FOUND,
       };
     }
     if (project.owner_id !== userId) {
@@ -158,8 +154,8 @@ export const getProject = async (
       });
       if (!collaborator) {
         throw {
-          status: HTTP_STATUS.FORBIDDEN,
-          message: ERROR_MESSAGES.FORBIDDEN,
+          status: constants.HTTP_STATUS.FORBIDDEN,
+          message: constants.ERROR_MESSAGES.FORBIDDEN,
         };
       }
     }
@@ -184,21 +180,21 @@ export const updateProject = async (
   try {
     if (!name || !description || !programming_language) {
       throw {
-        status: HTTP_STATUS.BAD_REQUEST,
-        message: ERROR_MESSAGES.MISSING_FIELDS,
+        status: constants.HTTP_STATUS.BAD_REQUEST,
+        message: constants.ERROR_MESSAGES.MISSING_FIELDS,
       };
     }
     const project = await Project.findByPk(projectId);
     if (!project) {
       throw {
-        status: HTTP_STATUS.NOT_FOUND,
-        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+        status: constants.HTTP_STATUS.NOT_FOUND,
+        message: constants.ERROR_MESSAGES.PROJECT_NOT_FOUND,
       };
     }
     if (project.owner_id !== userId) {
       throw {
-        status: HTTP_STATUS.FORBIDDEN,
-        message: ERROR_MESSAGES.FORBIDDEN,
+        status: constants.HTTP_STATUS.FORBIDDEN,
+        message: constants.ERROR_MESSAGES.FORBIDDEN,
       };
     }
     await project.update({
@@ -265,14 +261,14 @@ export const deleteProject = async (
     const project = await Project.findByPk(projectId);
     if (!project) {
       throw {
-        status: HTTP_STATUS.NOT_FOUND,
-        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+        status: constants.HTTP_STATUS.NOT_FOUND,
+        message: constants.ERROR_MESSAGES.PROJECT_NOT_FOUND,
       };
     }
     if (project.owner_id !== userId) {
       throw {
-        status: HTTP_STATUS.FORBIDDEN,
-        message: ERROR_MESSAGES.FORBIDDEN,
+        status: constants.HTTP_STATUS.FORBIDDEN,
+        message: constants.ERROR_MESSAGES.FORBIDDEN,
       };
     }
     await Project.sequelize?.transaction(async (t) => {
@@ -303,15 +299,15 @@ export const executeCode = async (
   try {
     if (!codeValue) {
       throw {
-        status: HTTP_STATUS.BAD_REQUEST,
-        message: ERROR_MESSAGES.MISSING_FIELDS,
+        status: constants.HTTP_STATUS.BAD_REQUEST,
+        message: constants.ERROR_MESSAGES.MISSING_FIELDS,
       };
     }
     const project = await Project.findByPk(projectId);
     if (!project) {
       throw {
-        status: HTTP_STATUS.NOT_FOUND,
-        message: ERROR_MESSAGES.PROJECT_NOT_FOUND,
+        status: constants.HTTP_STATUS.NOT_FOUND,
+        message: constants.ERROR_MESSAGES.PROJECT_NOT_FOUND,
       };
     }
     const owner = project.owner_id === userId;
@@ -324,18 +320,20 @@ export const executeCode = async (
     });
     if (!owner && !editor) {
       throw {
-        status: HTTP_STATUS.FORBIDDEN,
-        message: ERROR_MESSAGES.FORBIDDEN,
+        status: constants.HTTP_STATUS.FORBIDDEN,
+        message: constants.ERROR_MESSAGES.FORBIDDEN,
       };
     }
-    const judge0LanguageId = getJudge0LanguageId(project.programming_language);
+    const judge0LanguageId = utils.getJudge0LanguageId(
+      project.programming_language
+    );
     if (!judge0LanguageId) {
       throw {
-        status: HTTP_STATUS.BAD_REQUEST,
-        message: ERROR_MESSAGES.UNSUPPORTED_LANGUAGE,
+        status: constants.HTTP_STATUS.BAD_REQUEST,
+        message: constants.ERROR_MESSAGES.UNSUPPORTED_LANGUAGE,
       };
     }
-    const executionResult = await executeCodeOnJudge0(
+    const executionResult = await utils.executeCodeOnJudge0(
       judge0LanguageId,
       codeValue
     );

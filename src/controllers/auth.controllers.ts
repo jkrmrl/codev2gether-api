@@ -1,27 +1,23 @@
 import { Request, Response } from "express";
-import { registerUser, loginUser } from "../services/auth.services";
-import { HTTP_STATUS } from "../constants/status.constants";
-import {
-  SUCCESS_MESSAGES,
-  ERROR_MESSAGES,
-} from "../constants/messages.constants";
-import {
-  generateAccessToken,
-  generateRefreshToken,
-  verifyRefreshToken,
-} from "../utils/token.utils";
+import * as services from "../services";
+import * as constants from "../constants";
+import * as utils from "../utils";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, username, password } = req.body;
-    const user = await registerUser(name, username, password);
+    const user = await services.registerUser(name, username, password);
     if (!user) {
       res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ message: ERROR_MESSAGES.INTERNAL_ERROR });
+        .status(constants.HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ message: constants.ERROR_MESSAGES.INTERNAL_ERROR });
     }
-    const accessToken = generateAccessToken(user.id, user.name, user.username);
-    const refreshToken = generateRefreshToken(
+    const accessToken = utils.generateAccessToken(
+      user.id,
+      user.name,
+      user.username
+    );
+    const refreshToken = utils.generateRefreshToken(
       user.id,
       user.name,
       user.username
@@ -33,27 +29,34 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       maxAge: 24 * 60 * 60 * 1000,
       path: "/",
     });
-    res
-      .status(HTTP_STATUS.CREATED)
-      .json({ message: SUCCESS_MESSAGES.REGISTER_SUCCESS, accessToken });
-  } catch (error: any) {
-    res.status(error?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      message: error?.message || ERROR_MESSAGES.INTERNAL_ERROR,
+    res.status(constants.HTTP_STATUS.CREATED).json({
+      message: constants.SUCCESS_MESSAGES.REGISTER_SUCCESS,
+      accessToken,
     });
+  } catch (error: any) {
+    res
+      .status(error?.status || constants.HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json({
+        message: error?.message || constants.ERROR_MESSAGES.INTERNAL_ERROR,
+      });
   }
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
-    const user = await loginUser(username, password);
+    const user = await services.loginUser(username, password);
     if (!user) {
       res
-        .status(HTTP_STATUS.UNAUTHORIZED)
-        .json({ message: ERROR_MESSAGES.INTERNAL_ERROR });
+        .status(constants.HTTP_STATUS.UNAUTHORIZED)
+        .json({ message: constants.ERROR_MESSAGES.INTERNAL_ERROR });
     }
-    const accessToken = generateAccessToken(user.id, user.name, user.username);
-    const refreshToken = generateRefreshToken(
+    const accessToken = utils.generateAccessToken(
+      user.id,
+      user.name,
+      user.username
+    );
+    const refreshToken = utils.generateRefreshToken(
       user.id,
       user.name,
       user.username
@@ -66,12 +69,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       path: "/",
     });
     res
-      .status(HTTP_STATUS.OK)
-      .json({ message: SUCCESS_MESSAGES.LOGIN_SUCCESS, accessToken });
+      .status(constants.HTTP_STATUS.OK)
+      .json({ message: constants.SUCCESS_MESSAGES.LOGIN_SUCCESS, accessToken });
   } catch (error: any) {
     res
-      .status(error?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json({ message: error?.message || ERROR_MESSAGES.INTERNAL_ERROR });
+      .status(error?.status || constants.HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json({
+        message: error?.message || constants.ERROR_MESSAGES.INTERNAL_ERROR,
+      });
   }
 };
 
@@ -82,16 +87,16 @@ export const refreshTokenController = async (
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
     res
-      .status(HTTP_STATUS.UNAUTHORIZED)
-      .json({ message: ERROR_MESSAGES.REFRESH_TOKEN_NOT_FOUND });
+      .status(constants.HTTP_STATUS.UNAUTHORIZED)
+      .json({ message: constants.ERROR_MESSAGES.REFRESH_TOKEN_NOT_FOUND });
   }
   try {
-    const decoded = verifyRefreshToken(refreshToken) as {
+    const decoded = utils.verifyRefreshToken(refreshToken) as {
       id: number;
       name: string;
       username: string;
     };
-    const newAccessToken = generateAccessToken(
+    const newAccessToken = utils.generateAccessToken(
       decoded.id,
       decoded.name,
       decoded.username
@@ -104,8 +109,8 @@ export const refreshTokenController = async (
       path: "/",
     });
     res
-      .status(HTTP_STATUS.UNAUTHORIZED)
-      .json({ message: ERROR_MESSAGES.INVALID_REFRESH_TOKEN });
+      .status(constants.HTTP_STATUS.UNAUTHORIZED)
+      .json({ message: constants.ERROR_MESSAGES.INVALID_REFRESH_TOKEN });
   }
 };
 
@@ -117,12 +122,14 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
       path: "/",
     });
     res
-      .status(HTTP_STATUS.OK)
-      .json({ message: SUCCESS_MESSAGES.LOGOUT_SUCCESS });
+      .status(constants.HTTP_STATUS.OK)
+      .json({ message: constants.SUCCESS_MESSAGES.LOGOUT_SUCCESS });
   } catch (error: any) {
     console.error("Error during logout:", error);
     res
-      .status(error?.status || HTTP_STATUS.INTERNAL_SERVER_ERROR)
-      .json({ message: error?.message || ERROR_MESSAGES.LOGOUT_FAILURE });
+      .status(error?.status || constants.HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json({
+        message: error?.message || constants.ERROR_MESSAGES.LOGOUT_FAILURE,
+      });
   }
 };
