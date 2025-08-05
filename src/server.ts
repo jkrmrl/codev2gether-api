@@ -10,6 +10,10 @@ import Collaborator from "./models/collaborators.model";
 import Code from "./models/code.model";
 import cookieParser from "cookie-parser";
 
+import { Server } from "socket.io"; // Importing Server from socket.io
+import http from "http"; // To create an HTTP server to integrate with Socket.IO
+import { initializeSocket } from "./utils/socket.utils"; // Import the socket utils
+
 const models = { Project, User, Collaborator, Code };
 
 const DB_HOST = process.env.DB_HOST;
@@ -37,6 +41,24 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectsRoutes);
 
-app.listen(PORT, () =>
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize Socket.IO with the HTTP server
+const io = new Server(server, {
+  cors: {
+    origin: `http://${DB_HOST}:${CLIENT_PORT}`,
+    methods: ["GET", "POST"],
+  },
+});
+
+// Initialize socket events from socket.utils.ts
+initializeSocket(io);
+
+// app.listen(PORT, () =>
+//   console.log(`Server running on http://localhost:${PORT}`)
+// );
+
+server.listen(PORT, () =>
   console.log(`Server running on http://localhost:${PORT}`)
 );
